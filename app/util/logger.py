@@ -1,8 +1,8 @@
-class Logger():
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    BLUE = '\033[34m'
-    END = '\033[0m'
+class Logger:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    BLUE = "\033[34m"
+    END = "\033[0m"
 
     def err(self, msg: str):
         print(f"{Logger.RED}[ERROR]{Logger.END} - {msg}")

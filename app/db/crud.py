@@ -1,25 +1,32 @@
 import hashlib
+
 from sqlalchemy.orm import Session
+
 from . import models, schemas
 
 
-def get_user(db: Session, user_id: int):
+def get_user(db: Session, user_id: int) -> models.User:
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
-def get_user_by_email(db: Session, email: str):
+def get_user_by_email(db: Session, email: str) -> models.User:
     return db.query(models.User).filter(models.User.email == email).first()
 
 
-def get_user_by_username(db: Session, username: str):
+def get_user_by_username(db: Session, username: str) -> models.User:
     return db.query(models.User).filter(models.User.username == username).first()
 
 
-def create_user(db: Session, user: schemas.UserCreate):
+def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
     db_user = models.User(
-        username=user.username, email=user.email, birthDate=user.birthDate, hashed_password=hashed_password)
+        username=user.username,
+        email=user.email,
+        birthDate=user.birthDate,
+        hashed_password=hashed_password,
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    db.close()
     return db_user

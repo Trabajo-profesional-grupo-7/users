@@ -1,17 +1,16 @@
 import os
 import urllib.parse
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 db_user = urllib.parse.quote_plus(os.getenv("POSTGRES_USER"))
 db_password = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD"))
 db_name = urllib.parse.quote_plus(os.getenv("POSTGRES_DB"))
 db_service = urllib.parse.quote_plus(os.getenv("POSTGRES_SERVICE"))
 
-SQLALCHEMY_DATABASE_URL = \
-    f"postgresql://{db_user}:{db_password}@{db_service}/{db_name}"
+SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_service}/{db_name}"
 
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -26,7 +25,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-def get_db_session() -> Session:
-    return next(get_db())

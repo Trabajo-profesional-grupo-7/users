@@ -1,20 +1,26 @@
-from fastapi import APIRouter
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.db import crud, schemas
+import app.services.users_services as srv
+from app.db import schemas
 from app.db.database import SessionLocal, get_db
-from app.services.logger import Logger
+from app.util.api_exception import APIException, APIExceptionToHTTP
+from app.util.logger import Logger
 
 router = APIRouter()
 
 
-@router.post("/users/", response_model=schemas.User, status_code=201, tags=["Users"])
+@router.post(
+    "/users/",
+    tags=["Users"],
+    status_code=201,
+    response_model=schemas.User,
+    description="Create a new user in the database",
+)
 def create_user(user: schemas.UserCreate, db: SessionLocal = Depends(get_db)):
-    db_user_email = crud.get_user_by_email(db, email=user.email)
-    db_user_username = crud.get_user_by_username(db, username=user.username)
-    if db_user_email or db_user_username:
-        Logger().info("User alredy exists")
-        raise HTTPException(
-            status_code=409, detail={"status": "error", "message": "Email already registered"})
-
-    return crud.create_user(db=db, user=user)
+    try:
+        user = srv.new_user(db, user)
+        Logger().info(f"User {user.username} created")
+        return user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
