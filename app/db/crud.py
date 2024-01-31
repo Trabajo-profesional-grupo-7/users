@@ -1,8 +1,8 @@
-import hashlib
-
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+import app.schemas.users as schemas
+
+from . import models
 
 
 def get_user(db: Session, user_id: int) -> models.User:
@@ -18,15 +18,25 @@ def get_user_by_username(db: Session, username: str) -> models.User:
 
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
-    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
     db_user = models.User(
         username=user.username,
         email=user.email,
-        birthDate=user.birthDate,
-        hashed_password=hashed_password,
+        birth_date=user.birth_date,
+        hashed_password=user.password,
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    db.close()
+    return db_user
+
+
+def update_user(db: Session, user_id: int, user: schemas.UserUpdate) -> models.User:
+    db_user = get_user(db, user_id)
+
+    for var, value in vars(user).items():
+        if value:
+            setattr(db_user, var, value)
+
+    db.commit()
+    db.refresh(db_user)
     return db_user

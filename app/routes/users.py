@@ -1,26 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 import app.services.users_services as srv
-from app.db import schemas
-from app.db.database import SessionLocal, get_db
-from app.util.api_exception import APIException, APIExceptionToHTTP
-from app.util.logger import Logger
+from app.db.database import get_db
+from app.schemas.token import *
+from app.schemas.users import *
+from app.utils.api_exception import APIException, APIExceptionToHTTP
+from app.utils.logger import Logger
 
 router = APIRouter()
 
 
 @router.post(
-    "/users/",
-    tags=["Users"],
+    "/users/signup",
+    tags=["Auth"],
     status_code=201,
-    response_model=schemas.User,
+    response_model=User,
     description="Create a new user in the database",
 )
-def create_user(user: schemas.UserCreate, db: SessionLocal = Depends(get_db)):
+def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     try:
-        user = srv.new_user(db, user)
-        Logger().info(f"User {user.username} created")
-        return user
+        new_user = srv.new_user(db, user)
+        Logger().info(f"User {new_user.username} created")
+        return new_user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
+
+
+@router.post(
+    "/users/login",
+    tags=["Auth"],
+    status_code=200,
+    response_model=Token,
+    description="Generate a token for valid credentials",
+)
+def login_user(user: UserLogin, db: Session = Depends(get_db)) -> User:
+    try:
+        jwt = srv.new_login(db, user)
+        Logger().info(f"User {user.email} logged in")
+        return jwt
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)

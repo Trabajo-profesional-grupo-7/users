@@ -2,7 +2,7 @@ from typing import Union
 
 from fastapi import HTTPException, status
 
-from app.util.constants import *
+from app.utils.constants import *
 
 
 class APIException(Exception):
@@ -20,6 +20,8 @@ class APIExceptionToHTTP:
             UNKNOWN_ERROR: status.HTTP_500_INTERNAL_SERVER_ERROR,
             DATABASE_ERROR: status.HTTP_500_INTERNAL_SERVER_ERROR,
             USER_EXISTS_ERROR: status.HTTP_409_CONFLICT,
+            LOGIN_ERROR: status.HTTP_400_BAD_REQUEST,
+            EXPIRED_TOKEN: status.HTTP_401_UNAUTHORIZED,
         }
 
     def convert(

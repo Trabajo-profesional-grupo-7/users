@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, Date, Integer, String
 
 from .database import Base
 
@@ -9,5 +9,6 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     email = Column(String, unique=True)
-    birthDate = Column(DateTime)
+    birth_date = Column(Date)
     hashed_password = Column(String)
+    refresh_token = Column(String, nullable=True, default=None)
