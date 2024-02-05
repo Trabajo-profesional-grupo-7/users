@@ -20,7 +20,7 @@ def create_access_token(data: dict, expires_delta: int | None = None) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(token: str) -> models.User:
+def authorize_token(token: str) -> models.User:
     try:
         payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])
 
@@ -32,5 +32,16 @@ def get_current_user(token: str) -> models.User:
             )
 
         return user_id
+    except Exception as e:
+        raise APIException(code=EXPIRED_TOKEN, msg=str(e))
+
+
+def get_current_user(token: str) -> int | None:
+    try:
+        payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload:
+            return None
+
+        return payload.get("sub")
     except Exception as e:
         raise APIException(code=EXPIRED_TOKEN, msg=str(e))
