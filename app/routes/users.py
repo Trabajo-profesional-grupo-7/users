@@ -86,3 +86,24 @@ def refresh_token(
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.patch(
+    "/users",
+    tags=["Users"],
+    status_code=200,
+    response_model=User,
+    description="Update user profile",
+)
+def update_user_profile(
+    updated_user: UserBase,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    db: Session = Depends(get_db),
+):
+    try:
+        user = srv.update_user(db, credentials, updated_user)
+        Logger().info(f"User {user.id} updated")
+        return user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)

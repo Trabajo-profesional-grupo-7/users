@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, Integer, String
+from sqlalchemy import JSON, Column, Date, Integer, String
 
 from .database import Base
 
@@ -10,5 +10,6 @@ class User(Base):
     username = Column(String)
     email = Column(String, unique=True)
     birth_date = Column(Date)
+    preferences = Column(JSON, default=None)
     hashed_password = Column(String)
     refresh_token = Column(String, nullable=True, default=None)

@@ -106,3 +106,19 @@ def refresh_user_tokens(
         return create_session_tokens(db, db_user)
 
     return exception_handler(refresh_token_logic)
+
+
+def update_user(
+    db: Session,
+    credentials: HTTPAuthorizationCredentials,
+    updated_user: UserBase,
+):
+    def update_user_logic():
+        if credentials.scheme != "Bearer":
+            raise APIException(code=INVALID_HEADER, msg="Not authenticated")
+
+        user_id = auth.get_current_user(credentials.credentials)
+
+        return crud.update_user(db, user_id, updated_user)
+
+    return exception_handler(update_user_logic)

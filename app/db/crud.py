@@ -22,6 +22,7 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
         username=user.username,
         email=user.email,
         birth_date=user.birth_date,
+        preferences=user.preferences,
         hashed_password=user.password,
     )
     db.add(db_user)
@@ -34,7 +35,7 @@ def update_user(db: Session, user_id: int, user: schemas.UserUpdate) -> models.U
     db_user = get_user(db, user_id)
 
     for var, value in vars(user).items():
-        if value:
+        if value or var == "preferences":
             setattr(db_user, var, value)
 
     db.commit()
