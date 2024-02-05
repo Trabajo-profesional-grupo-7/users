@@ -2,6 +2,7 @@ import os
 import secrets
 import uuid
 
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -46,16 +47,16 @@ def new_login(db: Session, user: UserLogin) -> Token:
     def log_user_logic():
         db_user = pwd.authenticate_user(db, user.email, user.password)
 
-        if not user:
+        if not db_user:
             raise APIException(code=LOGIN_ERROR, msg=f"Invalid credentials")
 
         token = auth.create_access_token(
-            {"sub": db_user.id}, int(ACCESS_TOKEN_EXPIRE_MINUTES)
+            data={"sub": db_user.id}, expires_delta=int(ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
         random_secret = secrets.token_hex(8)
         refresh_token = auth.create_access_token(
-            {"sub": db_user.id, "secret": random_secret}
+            data={"sub": db_user.id, "secret": random_secret}
         )
 
         user_update = UserUpdate.model_construct(
@@ -72,3 +73,10 @@ def new_login(db: Session, user: UserLogin) -> Token:
         )
 
     return exception_handler(log_user_logic)
+
+
+def auth_user(credentials: HTTPAuthorizationCredentials) -> int:
+    if credentials.scheme == "Bearer":
+        return auth.get_current_user(credentials.credentials)
+
+    raise APIException(code=INVALID_HEADER, msg="Not authenticated")

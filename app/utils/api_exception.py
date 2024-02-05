@@ -22,6 +22,8 @@ class APIExceptionToHTTP:
             USER_EXISTS_ERROR: status.HTTP_409_CONFLICT,
             LOGIN_ERROR: status.HTTP_400_BAD_REQUEST,
             EXPIRED_TOKEN: status.HTTP_401_UNAUTHORIZED,
+            INVALID_CREDENTIALS: status.HTTP_401_UNAUTHORIZED,
+            INVALID_HEADER: status.HTTP_403_FORBIDDEN,
         }
 
     def convert(
