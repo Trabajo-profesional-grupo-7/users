@@ -114,19 +114,25 @@ def update_user(
     db: Session,
     credentials: HTTPAuthorizationCredentials,
     updated_user: UserBase,
-):
+) -> User:
     def update_user_logic():
         if credentials.scheme != "Bearer":
             raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
 
         user_id = auth.get_current_user(credentials.credentials)
 
-        return crud.update_user(db, user_id, updated_user)
+        db_user = crud.update_user(db, user_id, updated_user)
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
 
     return exception_handler(update_user_logic)
 
 
-def delete_user(db: Session, credentials: HTTPAuthorizationCredentials):
+def delete_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
     def delete_user_logic():
         if credentials.scheme != "Bearer":
             raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
@@ -142,3 +148,22 @@ def delete_user(db: Session, credentials: HTTPAuthorizationCredentials):
         return db_user
 
     return exception_handler(delete_user_logic)
+
+
+def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
+    def get_user_logic():
+        if credentials.scheme != "Bearer":
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+        user_id = auth.get_current_user(credentials.credentials)
+
+        db_user = crud.get_user(db, user_id)
+
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(get_user_logic)
