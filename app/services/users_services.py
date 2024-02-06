@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import authentication as auth
 from app.auth import password as pwd
-from app.db import crud, models
+from app.db import models, user_crud
 from app.schemas.token import *
 from app.schemas.users import *
 from app.utils.api_exception import APIException
@@ -48,7 +48,7 @@ def create_session_tokens(db: Session, user: models.User):
         refresh_token=refresh_token,
     )
 
-    crud.update_user(db, user.id, user_update)
+    user_crud.update_user(db, user.id, user_update)
 
     return Token.model_construct(
         token=token, refresh_token=refresh_token, token_type="jwt"
@@ -60,13 +60,13 @@ def create_session_tokens(db: Session, user: models.User):
 
 def new_user(db: Session, user: UserCreate) -> UserCreate:
     def create_user_logic():
-        db_user_email = crud.get_user_by_email(db, email=user.email)
+        db_user_email = user_crud.get_user_by_email(db, email=user.email)
         if db_user_email:
             raise APIException(
                 code=USER_EXISTS_ERROR, msg=f"Email {user.email} already used"
             )
         user.password = pwd.get_password_hash(user.password)
-        return crud.create_user(db=db, user=user)
+        return user_crud.create_user(db=db, user=user)
 
     return exception_handler(create_user_logic)
 
@@ -99,7 +99,7 @@ def refresh_user_tokens(
 
         user_id = auth.get_current_user(credentials.credentials)
 
-        db_user = crud.get_user(db, user_id)
+        db_user = user_crud.get_user(db, user_id)
         if db_user.refresh_token != credentials.credentials:
             raise APIException(
                 code=INVALID_CREDENTIALS_ERROR, msg="Invalid refresh token"
@@ -121,7 +121,7 @@ def update_user(
 
         user_id = auth.get_current_user(credentials.credentials)
 
-        db_user = crud.update_user(db, user_id, updated_user)
+        db_user = user_crud.update_user(db, user_id, updated_user)
         if not db_user:
             raise APIException(
                 code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
@@ -139,7 +139,7 @@ def delete_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
 
         user_id = auth.get_current_user(credentials.credentials)
 
-        db_user = crud.delete_user(db, user_id)
+        db_user = user_crud.delete_user(db, user_id)
         if not db_user:
             raise APIException(
                 code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
@@ -157,7 +157,7 @@ def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
 
         user_id = auth.get_current_user(credentials.credentials)
 
-        db_user = crud.get_user(db, user_id)
+        db_user = user_crud.get_user(db, user_id)
 
         if not db_user:
             raise APIException(
