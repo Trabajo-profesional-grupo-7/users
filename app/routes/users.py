@@ -107,3 +107,23 @@ def update_user_profile(
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.delete(
+    "/users",
+    tags=["Users"],
+    status_code=200,
+    response_model=User,
+    description="Delete user profile",
+)
+def delete_user_profile(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    db: Session = Depends(get_db),
+):
+    try:
+        db_user = srv.delete_user(db, credentials)
+        Logger().info(f"User {db_user.id} deleted")
+        return db_user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)

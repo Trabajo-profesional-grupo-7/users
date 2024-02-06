@@ -85,7 +85,7 @@ def new_login(db: Session, user: UserLogin) -> Token:
 
 def auth_user(credentials: HTTPAuthorizationCredentials) -> int:
     if credentials.scheme != "Bearer":
-        raise APIException(code=INVALID_HEADER, msg="Not authenticated")
+        raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
 
     return auth.authorize_token(credentials.credentials)
 
@@ -95,13 +95,15 @@ def refresh_user_tokens(
 ) -> Token:
     def refresh_token_logic():
         if credentials.scheme != "Bearer":
-            raise APIException(code=INVALID_HEADER, msg="Not authenticated")
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
 
         user_id = auth.get_current_user(credentials.credentials)
 
         db_user = crud.get_user(db, user_id)
         if db_user.refresh_token != credentials.credentials:
-            raise APIException(code=INVALID_CREDENTIALS, msg="Invalid refresh token")
+            raise APIException(
+                code=INVALID_CREDENTIALS_ERROR, msg="Invalid refresh token"
+            )
 
         return create_session_tokens(db, db_user)
 
@@ -115,10 +117,28 @@ def update_user(
 ):
     def update_user_logic():
         if credentials.scheme != "Bearer":
-            raise APIException(code=INVALID_HEADER, msg="Not authenticated")
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
 
         user_id = auth.get_current_user(credentials.credentials)
 
         return crud.update_user(db, user_id, updated_user)
 
     return exception_handler(update_user_logic)
+
+
+def delete_user(db: Session, credentials: HTTPAuthorizationCredentials):
+    def delete_user_logic():
+        if credentials.scheme != "Bearer":
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+        user_id = auth.get_current_user(credentials.credentials)
+
+        db_user = crud.delete_user(db, user_id)
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(delete_user_logic)
