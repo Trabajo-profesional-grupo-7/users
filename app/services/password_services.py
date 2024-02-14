@@ -5,9 +5,12 @@ import ssl
 from datetime import datetime
 from email.message import EmailMessage
 
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from app.db import password_crud, user_crud
+from app.auth import authentication as auth
+from app.auth import password as pwd
+from app.db import pwd_recover_crud, user_crud
 from app.schemas.password import *
 from app.utils.api_exception import APIException
 from app.utils.constants import *
@@ -80,7 +83,7 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
     if not db_user:
         raise APIException(code=USER_DOES_NOT_EXISTS_ERROR, msg="Email not found")
 
-    if password_crud.get_recover(db, db_user.id):
+    if pwd_recover_crud.get_recover(db, db_user.id):
         raise APIException(
             code=RECOVER_ALREADY_INITIATED_ERROR, msg=f"Pin alredy sent to {email}"
         )
@@ -92,4 +95,34 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
         user_id=db_user.id, emited_datetime=datetime.now(), pin=pin
     )
 
-    return password_crud.new_pwd_recover(db, recover)
+    return pwd_recover_crud.new_pwd_recover(db, recover)
+
+
+def recover_password(
+    db: Session,
+    credentials: HTTPAuthorizationCredentials,
+    recover_data: UpdateRecoverPassword,
+):
+    user_id = auth.get_current_user(credentials.credentials)
+
+    if credentials.scheme != "Bearer" or not user_id:
+        raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+    db_recover = pwd_recover_crud.get_recover(db, user_id)
+    if not db_recover:
+        raise APIException(
+            code=RECOVERY_NOT_INITIATED_ERROR,
+            msg="The user did not initiate the password recovery process",
+        )
+
+    if db_recover.pin == recover_data.code:
+        hashed_password = pwd.get_password_hash(recover_data.new_password)
+        db_user = user_crud.update_user_pwd(db, user_id, hashed_password)
+        pwd_recover_crud.delete_recover(db, user_id)
+        return db_user.id, "Password updated"
+
+    db_recover = pwd_recover_crud.update_recover_attemps(db, user_id)
+    if db_recover.leftover_attempts == 0:
+        pwd_recover_crud.delete_recover(db, user_id)
+
+    return user_id, "Invalid code"

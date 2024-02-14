@@ -1,10 +1,15 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
-class RecoverPasswordRequest(BaseModel):
+class InitRecoverPassword(BaseModel):
     email: EmailStr
+
+
+class UpdateRecoverPassword(BaseModel):
+    code: str
+    new_password: str = Field("password", min_length=8)
 
 
 class PasswordRecover(BaseModel):

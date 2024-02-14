@@ -43,6 +43,16 @@ def update_user(db: Session, user_id: int, user: schemas.UserUpdate) -> models.U
     return db_user
 
 
+def update_user_pwd(db: Session, user_id: int, new_password: str) -> models.User:
+    db_user = get_user(db, user_id)
+
+    setattr(db_user, "hashed_password", new_password)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
 def delete_user(db: Session, user_id: int) -> models.User | None:
     db_user = get_user(db, user_id)
 
