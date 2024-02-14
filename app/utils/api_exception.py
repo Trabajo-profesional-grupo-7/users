@@ -27,6 +27,7 @@ class APIExceptionToHTTP:
             USER_DOES_NOT_EXISTS_ERROR: status.HTTP_404_NOT_FOUND,
             RECOVERY_NOT_INITIATED_ERROR: status.HTTP_404_NOT_FOUND,
             INVALID_RECOVERY_CODE_ERROR: status.HTTP_400_BAD_REQUEST,
+            WRONG_PASSWORD_ERROR: status.HTTP_400_BAD_REQUEST,
         }
 
     def convert(

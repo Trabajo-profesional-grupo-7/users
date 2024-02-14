@@ -12,6 +12,7 @@ from app.auth import authentication as auth
 from app.auth import password as pwd
 from app.db import pwd_recover_crud, user_crud
 from app.schemas.password import *
+from app.services import users_services as user_srv
 from app.utils.api_exception import APIException
 from app.utils.constants import *
 
@@ -79,6 +80,30 @@ def send_email(pin: int, email: str):
     return pin
 
 
+def update_password(
+    db: Session,
+    credentials: HTTPAuthorizationCredentials,
+    current_pwd: str,
+    new_password: str,
+) -> int:
+    user_id = auth.get_current_user(credentials.credentials)
+    if not user_id or credentials.scheme != "Bearer":
+        raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+    db_user = user_crud.get_user(db, user_id)
+    if not db_user:
+        raise APIException(
+            code=USER_DOES_NOT_EXISTS_ERROR,
+            msg="User ID does not match with any valid user",
+        )
+
+    if pwd.verify_password(current_pwd, db_user.hashed_password):
+        db_user = user_srv.update_password(db, user_id, new_password)
+        return db_user.id
+
+    raise APIException(code=WRONG_PASSWORD_ERROR, msg="Current password does not match")
+
+
 def init_recover_password(db: Session, email: str) -> PasswordRecover:
     db_user = user_crud.get_user_by_email(db, email)
     if not db_user:
@@ -129,7 +154,7 @@ def recover_password(
 
     if db_recover.pin == recover_data.code:
         hashed_password = pwd.get_password_hash(recover_data.new_password)
-        user_crud.update_user_pwd(db, user_id, hashed_password)
+        user_srv.update_password(db, user_id, hashed_password)
         pwd_recover_crud.delete_recover(db, user_id)
         return user_id
 

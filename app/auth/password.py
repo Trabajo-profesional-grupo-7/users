@@ -11,7 +11,10 @@ def get_password_hash(password):
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except:
+        return False
 
 
 def authenticate_user(db: Session, email: str, password: str) -> models.User:

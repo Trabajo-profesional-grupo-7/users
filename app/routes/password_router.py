@@ -54,3 +54,25 @@ def recover_password(
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.patch(
+    "/users/password/update",
+    tags=["Password"],
+    status_code=200,
+    description="Receives the current and new passwords and updates it if the current password is correct",
+)
+def update_password(
+    update_data: UpdatePassword,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    db: Session = Depends(get_db),
+):
+    try:
+        user_id = srv.update_password(
+            db, credentials, update_data.current_password, update_data.new_password
+        )
+        Logger().info(f"User {user_id} recovered the password")
+        return {"user_id": user_id}
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
