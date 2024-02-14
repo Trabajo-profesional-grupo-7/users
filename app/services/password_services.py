@@ -88,9 +88,7 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
         )
 
     if pwd_recover_crud.get_recover(db, db_user.id):
-        raise APIException(
-            code=RECOVER_ALREADY_INITIATED_ERROR, msg=f"Pin alredy sent to {email}"
-        )
+        pwd_recover_crud.delete_recover(db, db_user.id)
 
     pin = secrets.token_hex(3)
     send_email(pin, email)
@@ -106,7 +104,7 @@ def recover_password(
     db: Session,
     recover_data: UpdateRecoverPassword,
 ) -> int:
-    db_user = user_crud.get_user_by_email(recover_data.email)
+    db_user = user_crud.get_user_by_email(db, recover_data.email)
     if not db_user:
         raise APIException(
             code=USER_DOES_NOT_EXISTS_ERROR,

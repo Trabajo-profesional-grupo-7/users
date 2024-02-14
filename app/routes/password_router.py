@@ -22,7 +22,7 @@ security = HTTPBearer()
     tags=["Password"],
     status_code=200,
     response_model=PasswordRecover,
-    description="Send pin by email to recover the password",
+    description="Send code by email to recover the password",
 )
 def init_recover_password(
     recover_data: InitRecoverPassword,
@@ -30,7 +30,7 @@ def init_recover_password(
 ):
     try:
         recover = srv.init_recover_password(db, recover_data.email)
-        Logger().info(f"PIN sent to {recover_data.email}")
+        Logger().info(f"Code sent to {recover_data.email}")
         return recover
     except APIException as e:
         Logger().err(str(e))
