@@ -2,7 +2,7 @@ import os
 import secrets
 import smtplib
 import ssl
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.message import EmailMessage
 
 from fastapi.security import HTTPAuthorizationCredentials
@@ -17,6 +17,8 @@ from app.utils.constants import *
 
 EMAIL = os.getenv("EMAIL_SENDER")
 PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+EXPIRE_MINUTES = os.getenv("RECOVERY_PWD_CODE_EXPIRE_MINUTES")
 
 
 def send_email(pin: int, email: str):
@@ -79,9 +81,11 @@ def send_email(pin: int, email: str):
 
 def init_recover_password(db: Session, email: str) -> PasswordRecover:
     db_user = user_crud.get_user_by_email(db, email)
-
     if not db_user:
-        raise APIException(code=USER_DOES_NOT_EXISTS_ERROR, msg="Email not found")
+        raise APIException(
+            code=USER_DOES_NOT_EXISTS_ERROR,
+            msg="The received email does not correspond to any valid account",
+        )
 
     if pwd_recover_crud.get_recover(db, db_user.id):
         raise APIException(
@@ -100,13 +104,15 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
 
 def recover_password(
     db: Session,
-    credentials: HTTPAuthorizationCredentials,
     recover_data: UpdateRecoverPassword,
-):
-    user_id = auth.get_current_user(credentials.credentials)
-
-    if credentials.scheme != "Bearer" or not user_id:
-        raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+) -> int:
+    db_user = user_crud.get_user_by_email(recover_data.email)
+    if not db_user:
+        raise APIException(
+            code=USER_DOES_NOT_EXISTS_ERROR,
+            msg="The received email does not correspond to any valid account",
+        )
+    user_id = db_user.id
 
     db_recover = pwd_recover_crud.get_recover(db, user_id)
     if not db_recover:
@@ -115,14 +121,29 @@ def recover_password(
             msg="The user did not initiate the password recovery process",
         )
 
+    diff = datetime.now() - db_recover.emited_datetime
+    if (diff / timedelta(minutes=1)) > 30:
+        pwd_recover_crud.delete_recover(db, user_id)
+        raise APIException(
+            code=INVALID_RECOVERY_CODE_ERROR,
+            msg="The code is no longer valid",
+        )
+
     if db_recover.pin == recover_data.code:
         hashed_password = pwd.get_password_hash(recover_data.new_password)
-        db_user = user_crud.update_user_pwd(db, user_id, hashed_password)
+        user_crud.update_user_pwd(db, user_id, hashed_password)
         pwd_recover_crud.delete_recover(db, user_id)
-        return db_user.id, "Password updated"
+        return user_id
 
     db_recover = pwd_recover_crud.update_recover_attemps(db, user_id)
     if db_recover.leftover_attempts == 0:
         pwd_recover_crud.delete_recover(db, user_id)
+        raise APIException(
+            code=INVALID_RECOVERY_CODE_ERROR,
+            msg="The code is no longer valid",
+        )
 
-    return user_id, "Invalid code"
+    raise APIException(
+        code=INVALID_RECOVERY_CODE_ERROR,
+        msg="Invalid code",
+    )

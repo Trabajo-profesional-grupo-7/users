@@ -45,13 +45,12 @@ def init_recover_password(
 )
 def recover_password(
     recover_data: UpdateRecoverPassword,
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     db: Session = Depends(get_db),
 ):
     try:
-        user_id, detail = srv.recover_password(db, credentials, recover_data)
-        Logger().info(f"User {user_id}: {detail}")
-        return {"user_id": user_id, "detail": detail}
+        user_id = srv.recover_password(db, recover_data)
+        Logger().info(f"User {user_id} recovered the password")
+        return {"user_id": user_id}
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
