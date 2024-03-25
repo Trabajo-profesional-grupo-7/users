@@ -132,9 +132,8 @@ def update_user(
     return exception_handler(update_user_logic)
 
 
-def update_password(db: Session, user_id: int, new_password) -> User:
-    password = pwd.get_password_hash(new_password)
-    return user_crud.update_user_pwd(db, user_id, password)
+def update_password(db: Session, user_id: int, new_password_hashed: str) -> User:
+    return user_crud.update_user_pwd(db, user_id, new_password_hashed)
 
 
 def delete_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:

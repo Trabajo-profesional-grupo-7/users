@@ -168,5 +168,5 @@ def recover_password(
 
     raise APIException(
         code=INVALID_RECOVERY_CODE_ERROR,
-        msg="Invalid code",
+        msg="Invalid password recovery code",
     )
