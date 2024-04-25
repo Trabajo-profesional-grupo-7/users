@@ -1,5 +1,5 @@
 import os
-import secrets
+import random
 import smtplib
 import ssl
 from datetime import datetime, timedelta
@@ -115,7 +115,7 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
     if pwd_recover_crud.get_recover(db, db_user.id):
         pwd_recover_crud.delete_recover(db, db_user.id)
 
-    pin = secrets.token_hex(3)
+    pin = random.randint(100000, 999999)
     send_email(pin, email)
 
     recover = PasswordRecoverCreate.model_construct(
