@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import authentication as auth
 from app.auth import password as pwd
 from app.db import models, user_crud
+from app.schemas.chat import Chat
 from app.schemas.token import *
 from app.schemas.users import *
 from app.utils.api_exception import APIException
@@ -171,3 +172,17 @@ def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
         return db_user
 
     return exception_handler(get_user_logic)
+
+
+def new_chat_ids(db: Session, chat: Chat) -> User:
+    def new_chat_ids_logic():
+        db_user = user_crud.update_user_chat(db, chat)
+
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(new_chat_ids_logic)

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 import app.services.users_services as srv
 from app.db.database import get_db
+from app.schemas.chat import Chat
 from app.schemas.token import *
 from app.schemas.users import *
 from app.utils.api_exception import APIException, APIExceptionToHTTP
@@ -69,9 +70,26 @@ def get_user_profile(
     db: Session = Depends(get_db),
 ):
     try:
-        authenticated_id = srv.get_user(db, credentials)
-        Logger().info(f"User id {authenticated_id} authenticated")
-        return authenticated_id
+        authenticated_user = srv.get_user(db, credentials)
+        Logger().info(f"User id {authenticated_user.id} authenticated")
+        return authenticated_user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
+
+
+@router.post(
+    "/users/chat",
+    tags=["Users"],
+    status_code=200,
+    response_model=User,
+    description="Create a new chat for a user",
+)
+def new_chat(chat: Chat, db: Session = Depends(get_db)):
+    try:
+        user = srv.new_chat_ids(db, chat)
+        Logger().info(f"New chat for user id {user.id}")
+        return user
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)

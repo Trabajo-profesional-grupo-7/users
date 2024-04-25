@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 import app.schemas.users as schemas
+from app.schemas.chat import Chat
 
 from . import models
 
@@ -62,3 +63,14 @@ def delete_user(db: Session, user_id: int) -> models.User | None:
         return db_user
 
     return None
+
+
+def update_user_chat(db: Session, chat: Chat) -> models.User | None:
+    db_user = get_user(db, chat.user_id)
+
+    setattr(db_user, "thread_id", chat.thread_id)
+    setattr(db_user, "assistant_id", chat.assistant_id)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
