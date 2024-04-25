@@ -93,3 +93,23 @@ def new_chat(chat: Chat, db: Session = Depends(get_db)):
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.get(
+    "/users/{id}/chat",
+    tags=["Users"],
+    status_code=200,
+    response_model=Chat,
+    description="Get user chat",
+)
+def user_chat(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        chat = srv.get_user_chat(db, id)
+        Logger().info(f"Get user {chat.user_id} chat")
+        return chat
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)

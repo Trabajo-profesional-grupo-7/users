@@ -186,3 +186,17 @@ def new_chat_ids(db: Session, chat: Chat) -> User:
         return db_user
 
     return exception_handler(new_chat_ids_logic)
+
+
+def get_user_chat(db: Session, user_id: int) -> Chat:
+    def new_chat_ids_logic():
+        db_chat = user_crud.get_user_chat(db, user_id)
+
+        if not db_chat:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_chat
+
+    return exception_handler(new_chat_ids_logic)

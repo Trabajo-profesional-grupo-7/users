@@ -74,3 +74,12 @@ def update_user_chat(db: Session, chat: Chat) -> models.User | None:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def get_user_chat(db: Session, user_id: int) -> Chat:
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    thread_id = db_user.thread_id
+    assistant_id = db_user.assistant_id
+    return Chat.model_construct(
+        user_id=user_id, thread_id=thread_id, assistant_id=assistant_id
+    )
