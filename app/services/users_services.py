@@ -189,7 +189,7 @@ def new_chat_ids(db: Session, chat: Chat) -> User:
 
 
 def get_user_chat(db: Session, user_id: int) -> Chat:
-    def new_chat_ids_logic():
+    def get_chat_ids_logic():
         db_chat = user_crud.get_user_chat(db, user_id)
 
         if not db_chat:
@@ -199,4 +199,16 @@ def get_user_chat(db: Session, user_id: int) -> Chat:
 
         return db_chat
 
-    return exception_handler(new_chat_ids_logic)
+    return exception_handler(get_chat_ids_logic)
+
+
+def get_user_preferences(db: Session, user_id: int) -> list[str]:
+    def get_user_preferences_logic():
+        db_preferences = user_crud.get_user_preferences(db, user_id)
+
+        if not db_preferences:
+            return []
+
+        return db_preferences
+
+    return exception_handler(get_user_preferences_logic)

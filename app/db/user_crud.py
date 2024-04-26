@@ -83,3 +83,8 @@ def get_user_chat(db: Session, user_id: int) -> Chat:
     return Chat.model_construct(
         user_id=user_id, thread_id=thread_id, assistant_id=assistant_id
     )
+
+
+def get_user_preferences(db: Session, user_id: int) -> list[str]:
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    return db_user.preferences

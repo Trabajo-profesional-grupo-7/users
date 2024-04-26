@@ -113,3 +113,23 @@ def user_chat(
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.get(
+    "/users/{id}/preferences",
+    tags=["Users"],
+    status_code=200,
+    response_model=list[str],
+    description="Get user preferences",
+)
+def user_preferences(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        preferences = srv.get_user_preferences(db, id)
+        Logger().info(f"Get user {id} preferences")
+        return preferences
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
