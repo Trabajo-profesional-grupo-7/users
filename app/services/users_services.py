@@ -46,6 +46,7 @@ def create_session_tokens(db: Session, user: models.User):
         username=user.username,
         email=user.email,
         birth_date=user.birth_date,
+        preferences=user.preferences,
         refresh_token=refresh_token,
     )
 
