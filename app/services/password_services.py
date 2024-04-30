@@ -98,7 +98,8 @@ def update_password(
         )
 
     if pwd.verify_password(current_pwd, db_user.hashed_password):
-        db_user = user_srv.update_password(db, user_id, new_password)
+        hashed_password = pwd.get_password_hash(new_password)
+        db_user = user_srv.update_password(db, user_id, hashed_password)
         return db_user.id
 
     raise APIException(code=WRONG_PASSWORD_ERROR, msg="Current password does not match")
