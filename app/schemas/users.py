@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     birth_date: Optional[date] = None
+    city: Optional[str] = None
     preferences: Optional[List[str]] = []
 
 
