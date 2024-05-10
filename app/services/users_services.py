@@ -1,6 +1,7 @@
 import os
 import secrets
 
+import requests
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -13,10 +14,28 @@ from app.schemas.token import *
 from app.schemas.users import *
 from app.utils.api_exception import APIException
 from app.utils.constants import *
+from app.utils.logger import Logger
 
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+ATTRACTIONS_SERVICE = os.getenv("ATTRACTIONS_SERVICE")
 
 # COMMON
+
+
+def update_recommendations(user_id: int, default_city: str, preferences: List[str]):
+    response = requests.put(
+        f"{ATTRACTIONS_SERVICE}/update_recommendations",
+        json={
+            "user_id": user_id,
+            "default_city": default_city,
+            "preferences": preferences,
+        },
+    )
+
+    if response.status_code == 200:
+        Logger().info(f"User {user_id} update recommendations")
+    else:
+        Logger().err(f"Error updating user {user_id} recommendations")
 
 
 def exception_handler(action):
@@ -68,7 +87,9 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
                 code=USER_EXISTS_ERROR, msg=f"Email {user.email} already used"
             )
         user.password = pwd.get_password_hash(user.password)
-        return user_crud.create_user(db=db, user=user)
+        db_user = user_crud.create_user(db=db, user=user)
+        update_recommendations(db_user.id, user.city, user.preferences)
+        return db_user
 
     return exception_handler(create_user_logic)
 
@@ -128,6 +149,9 @@ def update_user(
             raise APIException(
                 code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
             )
+
+        if updated_user.preferences or updated_user.city:
+            update_recommendations(user_id, db_user.city, db_user.preferences)
 
         return db_user
 
