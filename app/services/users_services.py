@@ -180,14 +180,9 @@ def delete_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
     return exception_handler(delete_user_logic)
 
 
-def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
+def get_user(db: Session, id: int) -> User:
     def get_user_logic():
-        if credentials.scheme != "Bearer":
-            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
-
-        user_id = auth.get_current_user(credentials.credentials)
-
-        db_user = user_crud.get_user(db, user_id)
+        db_user = user_crud.get_user(db, id)
 
         if not db_user:
             raise APIException(
