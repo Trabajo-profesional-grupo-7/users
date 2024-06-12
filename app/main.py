@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 
 from app.db import models
 from app.db.database import engine
+from app.ext import firebase as fb
 from app.routes.auth_router import router as auth_router
 from app.routes.password_router import router as password_router
 from app.routes.user_router import router as user_router
@@ -13,6 +14,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Users",
 )
+fb.setup()
 
 app.add_middleware(
     CORSMiddleware,

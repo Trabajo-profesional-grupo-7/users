@@ -2,6 +2,7 @@ import os
 import secrets
 
 import requests
+from fastapi import UploadFile
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth import authentication as auth
 from app.auth import password as pwd
 from app.db import models, user_crud
+from app.ext import firebase as fb
 from app.schemas.chat import Chat
 from app.schemas.token import *
 from app.schemas.users import *
@@ -88,7 +90,7 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
             )
         user.password = pwd.get_password_hash(user.password)
         db_user = user_crud.create_user(db=db, user=user)
-        update_recommendations(db_user.id, user.city, user.preferences)
+        # update_recommendations(db_user.id, user.city, user.preferences)
         return db_user
 
     return exception_handler(create_user_logic)
@@ -230,5 +232,24 @@ def get_user_preferences(db: Session, user_id: int) -> list[str]:
             return []
 
         return db_preferences
+
+    return exception_handler(get_user_preferences_logic)
+
+
+def update_avatar(credentials: HTTPAuthorizationCredentials, avatar: UploadFile):
+    def get_user_preferences_logic():
+        if credentials.scheme != "Bearer":
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+        user_id = auth.get_current_user(credentials.credentials)
+
+        avatar_link = fb.upload_image(
+            "avatars",
+            avatar.content_type,
+            avatar.file,
+            str(user_id) + " " + avatar.filename,
+        )
+
+        return user_id, avatar_link
 
     return exception_handler(get_user_preferences_logic)
