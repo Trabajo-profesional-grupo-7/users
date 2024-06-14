@@ -90,7 +90,7 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
             )
         user.password = pwd.get_password_hash(user.password)
         db_user = user_crud.create_user(db=db, user=user)
-        # update_recommendations(db_user.id, user.city, user.preferences)
+        update_recommendations(db_user.id, user.city, user.preferences)
         return db_user
 
     return exception_handler(create_user_logic)
