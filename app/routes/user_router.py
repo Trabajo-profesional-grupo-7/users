@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -139,15 +139,17 @@ def user_preferences(
     "/users/avatar",
     tags=["Users"],
     status_code=200,
+    response_model=User,
 )
 async def upload_avatar(
     avatar: Annotated[UploadFile, File()],
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ):
     try:
-        user_id, avatar_link = srv.update_avatar(credentials, avatar)
-        Logger().info(f"User {user_id} update avatar {avatar_link}")
-        return avatar_link
+        user = srv.update_avatar(db, credentials, avatar)
+        Logger().info(f"User {user.id} update avatar {user.avatar_link}")
+        return user
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)

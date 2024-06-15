@@ -19,6 +19,7 @@ class UserLogin(BaseModel):
 
 class UserUpdate(UserBase):
     refresh_token: Optional[str] = None
+    avatar_link: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -27,6 +28,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    avatar_link: Optional[str] = None
 
     class Config:
         from_attributes = True

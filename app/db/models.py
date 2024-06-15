@@ -16,6 +16,7 @@ class User(Base):
     refresh_token = Column(String, nullable=True, default=None)
     thread_id = Column(String, nullable=True, default=None)
     assistant_id = Column(String, nullable=True, default=None)
+    avatar_link = Column(String, nullable=True, default=None)
 
 
 class PasswordRecover(Base):

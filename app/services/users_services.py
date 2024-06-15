@@ -236,7 +236,9 @@ def get_user_preferences(db: Session, user_id: int) -> list[str]:
     return exception_handler(get_user_preferences_logic)
 
 
-def update_avatar(credentials: HTTPAuthorizationCredentials, avatar: UploadFile):
+def update_avatar(
+    db: Session, credentials: HTTPAuthorizationCredentials, avatar: UploadFile
+) -> User:
     def get_user_preferences_logic():
         if credentials.scheme != "Bearer":
             raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
@@ -249,7 +251,10 @@ def update_avatar(credentials: HTTPAuthorizationCredentials, avatar: UploadFile)
             avatar.file,
             str(user_id) + " " + avatar.filename,
         )
+        db_user = user_crud.update_user(
+            db, user_id, UserUpdate(avatar_link=avatar_link)
+        )
 
-        return user_id, avatar_link
+        return db_user
 
     return exception_handler(get_user_preferences_logic)
