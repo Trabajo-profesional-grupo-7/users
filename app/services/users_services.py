@@ -20,8 +20,22 @@ from app.utils.logger import Logger
 
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 ATTRACTIONS_SERVICE = os.getenv("ATTRACTIONS_SERVICE")
+EXTERNAL_SERVICES = os.getenv("EXTERNAL_SERVICES")
 
 # COMMON
+
+
+def exception_handler(action):
+    try:
+        return action()
+    except SQLAlchemyError as e:
+        raise APIException(
+            code=DATABASE_ERROR, msg=f"Database transaction error: {str(e)}"
+        )
+    except Exception as e:
+        if isinstance(e, APIException):
+            raise e
+        raise APIException(code=UNKNOWN_ERROR, msg="Unknown error")
 
 
 def update_recommendations(user_id: int, default_city: str, preferences: List[str]):
@@ -40,17 +54,16 @@ def update_recommendations(user_id: int, default_city: str, preferences: List[st
         Logger().err(f"Error updating user {user_id} recommendations")
 
 
-def exception_handler(action):
-    try:
-        return action()
-    except SQLAlchemyError as e:
-        raise APIException(
-            code=DATABASE_ERROR, msg=f"Database transaction error: {str(e)}"
-        )
-    except Exception as e:
-        if isinstance(e, APIException):
-            raise e
-        raise APIException(code=UNKNOWN_ERROR, msg="Unknown error")
+def create_assistant(user_id: int):
+    response = requests.post(
+        f"{EXTERNAL_SERVICES}/chatbot/create",
+        params={"user_id": user_id},
+    )
+
+    if response.status_code == 201:
+        Logger().info(f"User {user_id} assistant created")
+    else:
+        Logger().err(f"Error creating user {user_id} assitant")
 
 
 def create_session_tokens(db: Session, user: models.User):
@@ -91,6 +104,7 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
         user.password = pwd.get_password_hash(user.password)
         db_user = user_crud.create_user(db=db, user=user)
         update_recommendations(db_user.id, user.city, user.preferences)
+        create_assistant(db_user.id)
         return db_user
 
     return exception_handler(create_user_logic)
