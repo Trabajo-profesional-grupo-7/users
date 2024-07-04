@@ -272,3 +272,17 @@ def update_avatar(
         return db_user
 
     return exception_handler(get_user_preferences_logic)
+
+
+def update_fcm_token(db: Session, user_id: int, token: str):
+    def update_fcm_token_logic():
+        db_user = user_crud.update_user_fcm_token(db, user_id, token)
+
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(update_fcm_token_logic)

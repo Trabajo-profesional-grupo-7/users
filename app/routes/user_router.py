@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -150,6 +150,27 @@ async def upload_avatar(
         user = srv.update_avatar(db, credentials, avatar)
         Logger().info(f"User {user.id} update avatar {user.avatar_link}")
         return user
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)
+
+
+@router.post(
+    "/users/fcm_token",
+    tags=["Users"],
+    status_code=201,
+)
+async def update_fcm_token(
+    fcm_token: FcmToken,
+    db: Session = Depends(get_db),
+):
+    try:
+        user_id = fcm_token.user_id
+        token = fcm_token.fcm_token
+
+        db_user = srv.update_fcm_token(db, user_id, token)
+        Logger().info(f"User {user_id} update fcm_token")
+        return db_user.fcm_token
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)

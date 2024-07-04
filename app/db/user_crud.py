@@ -45,6 +45,16 @@ def update_user(db: Session, user_id: int, user: schemas.UserUpdate) -> models.U
     return db_user
 
 
+def update_user_fcm_token(db: Session, user_id: int, fcm_token: str) -> models.User:
+    db_user = get_user(db, user_id)
+
+    setattr(db_user, "fcm_token", fcm_token)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
 def update_user_pwd(db: Session, user_id: int, new_password: str) -> models.User:
     db_user = get_user(db, user_id)
 
