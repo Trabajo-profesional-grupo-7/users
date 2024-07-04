@@ -99,3 +99,8 @@ def get_user_chat(db: Session, user_id: int) -> Chat:
 def get_user_preferences(db: Session, user_id: int) -> list[str]:
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     return db_user.preferences
+
+
+def get_user_fcm_token(db: Session, user_id: int) -> str:
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    return db_user.fcm_token

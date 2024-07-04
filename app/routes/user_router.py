@@ -174,3 +174,22 @@ async def update_fcm_token(
     except APIException as e:
         Logger().err(str(e))
         raise APIExceptionToHTTP().convert(e)
+
+
+@router.get(
+    "/users/{id}/fcm_token",
+    tags=["Users"],
+    status_code=200,
+    description="Get user FCM token",
+)
+def get_fcm_token(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        fcm_token = srv.get_fcm_token(db, id)
+        Logger().info(f"Get user {id} fcm_token: {fcm_token}")
+        return fcm_token
+    except APIException as e:
+        Logger().err(str(e))
+        raise APIExceptionToHTTP().convert(e)

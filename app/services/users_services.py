@@ -286,3 +286,17 @@ def update_fcm_token(db: Session, user_id: int, token: str):
         return db_user
 
     return exception_handler(update_fcm_token_logic)
+
+
+def get_fcm_token(db: Session, user_id: int):
+    def get_fcm_token_logic():
+        fcm_token = user_crud.get_user_fcm_token(db, user_id)
+
+        if not fcm_token:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return fcm_token
+
+    return exception_handler(get_fcm_token_logic)
