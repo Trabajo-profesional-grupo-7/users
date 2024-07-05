@@ -105,6 +105,8 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
         db_user = user_crud.create_user(db=db, user=user)
         update_recommendations(db_user.id, user.city, user.preferences)
         create_assistant(db_user.id)
+        update_fcm_token(db, db_user.id, user.fcm_token)
+
         return db_user
 
     return exception_handler(create_user_logic)
