@@ -12,3 +12,4 @@ requests==2.31.0
 awscli==1.32.108
 firebase_admin==6.5.0
 python-multipart==0.0.9
+pytest==8.0.0
