@@ -37,7 +37,7 @@ def update_user(db: Session, user_id: int, user: schemas.UserUpdate) -> models.U
     db_user = get_user(db, user_id)
 
     for var, value in vars(user).items():
-        if value or var == "preferences":
+        if value or (var == "preferences" and len(value) > 0):
             setattr(db_user, var, value)
 
     db.commit()
