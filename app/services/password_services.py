@@ -1,5 +1,5 @@
 import os
-import secrets
+import random
 import smtplib
 import ssl
 from datetime import datetime, timedelta
@@ -98,7 +98,8 @@ def update_password(
         )
 
     if pwd.verify_password(current_pwd, db_user.hashed_password):
-        db_user = user_srv.update_password(db, user_id, new_password)
+        hashed_password = pwd.get_password_hash(new_password)
+        db_user = user_srv.update_password(db, user_id, hashed_password)
         return db_user.id
 
     raise APIException(code=WRONG_PASSWORD_ERROR, msg="Current password does not match")
@@ -115,7 +116,7 @@ def init_recover_password(db: Session, email: str) -> PasswordRecover:
     if pwd_recover_crud.get_recover(db, db_user.id):
         pwd_recover_crud.delete_recover(db, db_user.id)
 
-    pin = secrets.token_hex(3)
+    pin = random.randint(100000, 999999)
     send_email(pin, email)
 
     recover = PasswordRecoverCreate.model_construct(

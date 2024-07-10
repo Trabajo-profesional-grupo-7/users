@@ -1,6 +1,8 @@
 import os
 import secrets
 
+import requests
+from fastapi import UploadFile
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -8,12 +10,17 @@ from sqlalchemy.orm import Session
 from app.auth import authentication as auth
 from app.auth import password as pwd
 from app.db import models, user_crud
+from app.ext import firebase as fb
+from app.schemas.chat import Chat
 from app.schemas.token import *
 from app.schemas.users import *
 from app.utils.api_exception import APIException
 from app.utils.constants import *
+from app.utils.logger import Logger
 
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+ATTRACTIONS_SERVICE = os.getenv("ATTRACTIONS_SERVICE")
+EXTERNAL_SERVICES = os.getenv("EXTERNAL_SERVICES")
 
 # COMMON
 
@@ -31,6 +38,34 @@ def exception_handler(action):
         raise APIException(code=UNKNOWN_ERROR, msg="Unknown error")
 
 
+def update_recommendations(user_id: int, default_city: str, preferences: List[str]):
+    response = requests.put(
+        f"{ATTRACTIONS_SERVICE}/update_recommendations",
+        json={
+            "user_id": user_id,
+            "default_city": default_city,
+            "preferences": preferences,
+        },
+    )
+
+    if response.status_code == 200:
+        Logger().info(f"User {user_id} update recommendations")
+    else:
+        Logger().err(f"Error updating user {user_id} recommendations")
+
+
+def create_assistant(user_id: int):
+    response = requests.post(
+        f"{EXTERNAL_SERVICES}/chatbot/create",
+        params={"user_id": user_id},
+    )
+
+    if response.status_code == 201:
+        Logger().info(f"User {user_id} assistant created")
+    else:
+        Logger().err(f"Error creating user {user_id} assitant")
+
+
 def create_session_tokens(db: Session, user: models.User):
     token = auth.create_access_token(
         data={"sub": user.id}, expires_delta=int(ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -45,6 +80,7 @@ def create_session_tokens(db: Session, user: models.User):
         username=user.username,
         email=user.email,
         birth_date=user.birth_date,
+        preferences=user.preferences,
         refresh_token=refresh_token,
     )
 
@@ -66,7 +102,12 @@ def new_user(db: Session, user: UserCreate) -> UserCreate:
                 code=USER_EXISTS_ERROR, msg=f"Email {user.email} already used"
             )
         user.password = pwd.get_password_hash(user.password)
-        return user_crud.create_user(db=db, user=user)
+        db_user = user_crud.create_user(db=db, user=user)
+        update_recommendations(db_user.id, user.city, user.preferences)
+        create_assistant(db_user.id)
+        update_fcm_token(db, db_user.id, user.fcm_token)
+
+        return db_user
 
     return exception_handler(create_user_logic)
 
@@ -127,6 +168,9 @@ def update_user(
                 code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
             )
 
+        if updated_user.preferences or updated_user.city:
+            update_recommendations(user_id, db_user.city, db_user.preferences)
+
         return db_user
 
     return exception_handler(update_user_logic)
@@ -154,14 +198,9 @@ def delete_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
     return exception_handler(delete_user_logic)
 
 
-def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
+def get_user(db: Session, id: int) -> User:
     def get_user_logic():
-        if credentials.scheme != "Bearer":
-            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
-
-        user_id = auth.get_current_user(credentials.credentials)
-
-        db_user = user_crud.get_user(db, user_id)
+        db_user = user_crud.get_user(db, id)
 
         if not db_user:
             raise APIException(
@@ -171,3 +210,95 @@ def get_user(db: Session, credentials: HTTPAuthorizationCredentials) -> User:
         return db_user
 
     return exception_handler(get_user_logic)
+
+
+def new_chat_ids(db: Session, chat: Chat) -> User:
+    def new_chat_ids_logic():
+        db_user = user_crud.update_user_chat(db, chat)
+
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(new_chat_ids_logic)
+
+
+def get_user_chat(db: Session, user_id: int) -> Chat:
+    def get_chat_ids_logic():
+        db_chat = user_crud.get_user_chat(db, user_id)
+
+        if not db_chat:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_chat
+
+    return exception_handler(get_chat_ids_logic)
+
+
+def get_user_preferences(db: Session, user_id: int) -> list[str]:
+    def get_user_preferences_logic():
+        db_preferences = user_crud.get_user_preferences(db, user_id)
+
+        if not db_preferences:
+            return []
+
+        return db_preferences
+
+    return exception_handler(get_user_preferences_logic)
+
+
+def update_avatar(
+    db: Session, credentials: HTTPAuthorizationCredentials, avatar: UploadFile
+) -> User:
+    def get_user_preferences_logic():
+        if credentials.scheme != "Bearer":
+            raise APIException(code=INVALID_HEADER_ERROR, msg="Not authenticated")
+
+        user_id = auth.get_current_user(credentials.credentials)
+
+        avatar_link = fb.upload_image(
+            "avatars",
+            avatar.content_type,
+            avatar.file,
+            str(user_id) + " " + avatar.filename,
+        )
+        db_user = user_crud.update_user(
+            db, user_id, UserUpdate(avatar_link=avatar_link)
+        )
+
+        return db_user
+
+    return exception_handler(get_user_preferences_logic)
+
+
+def update_fcm_token(db: Session, user_id: int, token: str):
+    def update_fcm_token_logic():
+        db_user = user_crud.update_user_fcm_token(db, user_id, token)
+
+        if not db_user:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return db_user
+
+    return exception_handler(update_fcm_token_logic)
+
+
+def get_fcm_token(db: Session, user_id: int):
+    def get_fcm_token_logic():
+        fcm_token = user_crud.get_user_fcm_token(db, user_id)
+
+        if not fcm_token:
+            raise APIException(
+                code=USER_DOES_NOT_EXISTS_ERROR, msg="User does not exist"
+            )
+
+        return fcm_token
+
+    return exception_handler(get_fcm_token_logic)

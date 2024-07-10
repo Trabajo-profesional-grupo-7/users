@@ -2,9 +2,15 @@ uvicorn==0.26.0
 fastapi==0.109.0
 pydantic==2.5.3
 SQLAlchemy==2.0.25
-psycopg2==2.9.9
+psycopg2-binary==2.9.9
 email-validator==2.1.0.post1
 PyJWT==2.8.0
-cryptography==42.0.1
+cryptography==42.0.8
+httpx==0.24.1
 passlib==1.7.4
 bcrypt==4.0.1
+requests==2.31.0
+awscli==1.32.108
+firebase_admin==6.5.0
+python-multipart==0.0.9
+pytest==8.0.0

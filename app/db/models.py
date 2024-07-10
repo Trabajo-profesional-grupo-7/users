@@ -9,10 +9,15 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     email = Column(String, unique=True)
+    city = Column(String)
     birth_date = Column(Date)
     preferences = Column(JSON, default=None)
     hashed_password = Column(String)
     refresh_token = Column(String, nullable=True, default=None)
+    thread_id = Column(String, nullable=True, default=None)
+    assistant_id = Column(String, nullable=True, default=None)
+    avatar_link = Column(String, nullable=True, default=None)
+    fcm_token = Column(String, nullable=True, default=None)
 
 
 class PasswordRecover(Base):
